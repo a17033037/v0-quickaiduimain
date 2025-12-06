@@ -16,15 +16,15 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const markersRef = useRef<any[]>([])
+  const routingControlRef = useRef<any>(null)
+  const routePolylineRef = useRef<any>(null)
 
   useEffect(() => {
-    // Dynamically import Leaflet only on client side
     if (typeof window === "undefined") return
 
     const initMap = async () => {
       const L = (await import("leaflet")).default
 
-      // Fix Leaflet default icon path issues
       delete (L.Icon.Default.prototype as any)._getIconUrl
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -49,24 +49,27 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
         ;(mapRef.current as any)._leaflet_id = null
       }
 
-      // Determine center point
       const center =
         userLocation ||
         (hospitals[0]?.coordinates
           ? { lat: hospitals[0].coordinates.lat, lng: hospitals[0].coordinates.lng }
-          : { lat: 19.076, lng: 72.8777 }) // Default to Mumbai
+          : { lat: 19.076, lng: 72.8777 })
 
-      // Initialize map
-      const map = L.map(mapRef.current).setView([center.lat, center.lng], 12)
+      const map = L.map(mapRef.current, {
+        zoomControl: true,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        touchZoom: true,
+      }).setView([center.lat, center.lng], 13)
       mapInstanceRef.current = map
 
-      // Add OpenStreetMap tiles
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
         maxZoom: 19,
       }).addTo(map)
 
-      // Clear old markers
+      map.zoomControl.setPosition("bottomright")
+
       markersRef.current.forEach((marker) => {
         try {
           marker.remove()
@@ -76,25 +79,56 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
       })
       markersRef.current = []
 
-      // Add user location marker
       if (userLocation) {
         const userIcon = L.divIcon({
           className: "custom-user-marker",
-          html: `<div style="background-color: #3b82f6; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
+          html: `
+            <div style="position: relative; width: 24px; height: 24px;">
+              <div style="
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: #3b82f6; 
+                width: 16px; 
+                height: 16px; 
+                border-radius: 50%; 
+                border: 3px solid white; 
+                box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+                z-index: 2;
+              "></div>
+              <div style="
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: rgba(59, 130, 246, 0.2); 
+                width: 24px; 
+                height: 24px; 
+                border-radius: 50%;
+                animation: pulse 2s infinite;
+              "></div>
+            </div>
+            <style>
+              @keyframes pulse {
+                0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+              }
+            </style>
+          `,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
         })
 
         const userMarker = L.marker([userLocation.lat, userLocation.lng], {
           icon: userIcon,
         })
           .addTo(map)
-          .bindPopup("<strong>Your Location</strong>")
+          .bindPopup("<strong style='color: #3b82f6;'>📍 Your Location</strong>")
 
         markersRef.current.push(userMarker)
       }
 
-      // Add hospital markers
       hospitals.forEach((hospital) => {
         if (!hospital.coordinates) return
 
@@ -106,51 +140,66 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
           html: `
             <div style="
               background-color: ${color}; 
-              width: 32px; 
-              height: 32px; 
+              width: ${isSelected ? "40px" : "32px"}; 
+              height: ${isSelected ? "40px" : "32px"}; 
               border-radius: 50%; 
               border: 3px solid white; 
-              box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+              box-shadow: 0 3px 8px rgba(0,0,0,0.4);
               display: flex;
               align-items: center;
               justify-content: center;
               color: white;
               font-weight: bold;
-              font-size: 16px;
+              font-size: ${isSelected ? "20px" : "18px"};
+              transition: all 0.3s ease;
+              ${isSelected ? "animation: bounce 0.6s ease;" : ""}
             ">
               +
             </div>
+            ${
+              isSelected
+                ? `<style>
+              @keyframes bounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+              }
+            </style>`
+                : ""
+            }
           `,
-          iconSize: [32, 32],
-          iconAnchor: [16, 32],
+          iconSize: [isSelected ? 40 : 32, isSelected ? 40 : 32],
+          iconAnchor: [isSelected ? 20 : 16, isSelected ? 40 : 32],
         })
 
         const marker = L.marker([hospital.coordinates.lat, hospital.coordinates.lng], { icon })
           .addTo(map)
           .bindPopup(
             `
-            <div style="min-width: 200px;">
-              <strong style="font-size: 14px;">${hospital.name}</strong>
-              <div style="margin-top: 8px; font-size: 12px;">
-                <div style="display: flex; justify-content: space-between; margin: 4px 0;">
-                  <span>General Beds:</span>
-                  <strong>${hospital.general_beds_available}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin: 4px 0;">
-                  <span>Emergency Beds:</span>
-                  <strong>${hospital.emergency_beds_available}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin: 4px 0;">
-                  <span>ICU Beds:</span>
-                  <strong>${hospital.icu_beds_available}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin: 4px 0; padding-top: 4px; border-top: 1px solid #e5e7eb;">
-                  <span>Distance:</span>
-                  <strong>${hospital.distance_km} km</strong>
+            <div style="min-width: 220px; font-family: system-ui;">
+              <strong style="font-size: 15px; color: ${color}; display: block; margin-bottom: 8px;">${hospital.name}</strong>
+              <div style="font-size: 13px; background: #f9fafb; padding: 8px; border-radius: 6px; margin-top: 8px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                  <div style="padding: 4px;">
+                    <div style="color: #6b7280; font-size: 11px;">General</div>
+                    <strong style="color: #3b82f6; font-size: 16px;">${hospital.general_beds_available}</strong>
+                  </div>
+                  <div style="padding: 4px;">
+                    <div style="color: #6b7280; font-size: 11px;">Emergency</div>
+                    <strong style="color: #f59e0b; font-size: 16px;">${hospital.emergency_beds_available}</strong>
+                  </div>
+                  <div style="padding: 4px;">
+                    <div style="color: #6b7280; font-size: 11px;">ICU</div>
+                    <strong style="color: #ef4444; font-size: 16px;">${hospital.icu_beds_available}</strong>
+                  </div>
+                  <div style="padding: 4px;">
+                    <div style="color: #6b7280; font-size: 11px;">Distance</div>
+                    <strong style="color: #059669; font-size: 16px;">${hospital.distance_km} km</strong>
+                  </div>
                 </div>
               </div>
             </div>
           `,
+            { maxWidth: 250 },
           )
 
         markersRef.current.push(marker)
@@ -160,16 +209,73 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
         }
       })
 
-      // Fit bounds to show all markers
-      if (markersRef.current.length > 0) {
-        const group = L.featureGroup(markersRef.current)
-        map.fitBounds(group.getBounds().pad(0.1))
+      if (selectedHospitalId && userLocation) {
+        const selectedHospital = hospitals.find((h) => h.id === selectedHospitalId)
+        if (selectedHospital?.coordinates) {
+          // Remove previous route
+          if (routePolylineRef.current) {
+            try {
+              map.removeLayer(routePolylineRef.current)
+            } catch (e) {
+              console.error("Error removing route:", e)
+            }
+          }
+
+          // Draw route using simple straight line (can be enhanced with routing API)
+          const routeLine = L.polyline(
+            [
+              [userLocation.lat, userLocation.lng],
+              [selectedHospital.coordinates.lat, selectedHospital.coordinates.lng],
+            ],
+            {
+              color: "#dc2626",
+              weight: 4,
+              opacity: 0.7,
+              dashArray: "10, 10",
+              lineJoin: "round",
+            },
+          ).addTo(map)
+
+          routePolylineRef.current = routeLine
+
+          // Fit bounds to show both user and hospital
+          const bounds = L.latLngBounds([
+            [userLocation.lat, userLocation.lng],
+            [selectedHospital.coordinates.lat, selectedHospital.coordinates.lng],
+          ])
+          map.fitBounds(bounds, { padding: [50, 50] })
+        }
+      } else {
+        if (markersRef.current.length > 0) {
+          const group = L.featureGroup(markersRef.current)
+          map.fitBounds(group.getBounds().pad(0.1))
+        }
+      }
+
+      const handleResize = () => {
+        if (mapInstanceRef.current) {
+          setTimeout(() => {
+            mapInstanceRef.current.invalidateSize()
+          }, 100)
+        }
+      }
+      window.addEventListener("resize", handleResize)
+
+      return () => {
+        window.removeEventListener("resize", handleResize)
       }
     }
 
     initMap()
 
     return () => {
+      if (routePolylineRef.current && mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.removeLayer(routePolylineRef.current)
+        } catch (e) {
+          console.error("Error in cleanup:", e)
+        }
+      }
       if (mapInstanceRef.current) {
         try {
           mapInstanceRef.current.off()
@@ -186,7 +292,7 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
   return (
     <>
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-      <div ref={mapRef} className="w-full h-full rounded-lg" />
+      <div ref={mapRef} className="w-full h-full min-h-[400px] rounded-lg shadow-inner" />
     </>
   )
 }

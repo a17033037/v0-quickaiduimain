@@ -125,9 +125,8 @@ export default function EmergencyClient() {
           <p className="text-muted-foreground">Select your emergency type and find the nearest available hospital</p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left Panel - Emergency Form */}
-          <div className="lg:col-span-1 space-y-6">
+        <div className="grid gap-6 lg:grid-cols-3 xl:grid-cols-7">
+          <div className="lg:col-span-1 xl:col-span-2 space-y-6">
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <Activity className="h-5 w-5 text-red-600" />
@@ -178,7 +177,6 @@ export default function EmergencyClient() {
               </div>
             </Card>
 
-            {/* Hospital List */}
             {emergencyId && (
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Available Hospitals ({filteredHospitals.length})</h2>
@@ -236,9 +234,30 @@ export default function EmergencyClient() {
             )}
           </div>
 
-          {/* Right Panel - Map */}
-          <div className="lg:col-span-2">
-            <Card className="p-4 h-[600px] lg:h-full">
+          <div className="lg:col-span-2 xl:col-span-5">
+            <Card className="p-4 h-[500px] md:h-[600px] lg:h-[calc(100vh-12rem)] relative overflow-hidden">
+              <div className="absolute top-6 left-6 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 text-xs space-y-2">
+                <div className="font-semibold text-sm mb-2">Map Legend</div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-600 border-2 border-white shadow"></div>
+                  <span>Your Location</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-600 border-2 border-white shadow"></div>
+                  <span>Available Hospital</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-600 border-2 border-white shadow"></div>
+                  <span>Selected Hospital</span>
+                </div>
+                {selectedHospitalId && (
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <div className="w-6 h-0.5 bg-red-600" style={{ borderTop: "2px dashed #dc2626" }}></div>
+                    <span>Route</span>
+                  </div>
+                )}
+              </div>
+
               <HospitalMap
                 hospitals={filteredHospitals}
                 selectedHospitalId={selectedHospitalId}

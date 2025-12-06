@@ -104,7 +104,19 @@ export async function selectHospital(emergencyId: string, hospitalId: string) {
   const emergencyData = await supabaseFetch("emergencies", emergencyId)
   if (!emergencyData) throw new Error("Emergency not found")
 
-  const timeline = emergencyData.timeline || []
+  let timeline = []
+  try {
+    timeline =
+      typeof emergencyData.timeline === "string"
+        ? JSON.parse(emergencyData.timeline)
+        : Array.isArray(emergencyData.timeline)
+          ? emergencyData.timeline
+          : []
+  } catch (e) {
+    console.error("[v0] Failed to parse timeline:", e)
+    timeline = []
+  }
+
   timeline.push({
     time: new Date().toISOString(),
     event: "Hospital selected and notified",
@@ -114,7 +126,7 @@ export async function selectHospital(emergencyId: string, hospitalId: string) {
   const updated = await supabaseUpdate("emergencies", emergencyId, {
     selected_hospital_id: hospitalId,
     status: "en_route",
-    timeline,
+    timeline: JSON.stringify(timeline), // Convert back to JSON string for database
   })
 
   revalidatePath("/emergency")
@@ -126,14 +138,29 @@ export async function updateEmergencyStatus(emergencyId: string, status: string,
   const emergencyData = await supabaseFetch("emergencies", emergencyId)
   if (!emergencyData) throw new Error("Emergency not found")
 
-  const timeline = emergencyData.timeline || []
+  let timeline = []
+  try {
+    timeline =
+      typeof emergencyData.timeline === "string"
+        ? JSON.parse(emergencyData.timeline)
+        : Array.isArray(emergencyData.timeline)
+          ? emergencyData.timeline
+          : []
+  } catch (e) {
+    console.error("[v0] Failed to parse timeline:", e)
+    timeline = []
+  }
+
   timeline.push({
     time: new Date().toISOString(),
     event,
     status,
   })
 
-  const updated = await supabaseUpdate("emergencies", emergencyId, { status, timeline })
+  const updated = await supabaseUpdate("emergencies", emergencyId, {
+    status,
+    timeline: JSON.stringify(timeline), // Convert back to JSON string for database
+  })
 
   revalidatePath("/emergency")
   revalidatePath("/dashboard")

@@ -189,12 +189,12 @@ export default function DashboardClient() {
                             </div>
                           </div>
 
-                          {emergency.timeline && emergency.timeline.length > 0 && (
+                          {emergency.timeline && Array.isArray(emergency.timeline) && emergency.timeline.length > 0 && (
                             <div className="pl-4 border-l-2 border-gray-200 space-y-2">
                               {emergency.timeline.slice(-3).map((event, idx) => (
                                 <div key={idx} className="text-xs">
                                   <span className="text-muted-foreground">
-                                    {new Date(event.time).toLocaleTimeString()}
+                                    {new Date(event.timestamp || event.time).toLocaleTimeString()}
                                   </span>
                                   <span className="ml-2">{event.event}</span>
                                 </div>
