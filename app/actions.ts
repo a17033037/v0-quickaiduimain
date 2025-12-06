@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { supabaseInsert } from "@/lib/supabase/fetch-client"
+import { crypto } from "crypto"
 
 function getSupabaseCredentials() {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -52,6 +53,8 @@ async function supabaseFetch(table: string, id: string) {
 }
 
 export async function createEmergency(data: { type: string; location: string }) {
+  const emergencyId = crypto.randomUUID()
+
   const timeline = [
     {
       time: new Date().toISOString(),
@@ -60,15 +63,22 @@ export async function createEmergency(data: { type: string; location: string }) 
     },
   ]
 
+  console.log("[v0] Creating emergency:", { emergencyId, type: data.type, location: data.location })
+
   const { data: emergency, error } = await supabaseInsert("emergencies", {
+    id: emergencyId,
     type: data.type,
     location: data.location,
     status: "searching",
-    timeline,
+    timeline: JSON.stringify(timeline),
   })
 
-  if (error) throw new Error(error.message || "Failed to create emergency")
+  if (error) {
+    console.error("[v0] Emergency creation failed:", error)
+    throw new Error(error.message || "Failed to create emergency")
+  }
 
+  console.log("[v0] Emergency created successfully:", emergency)
   revalidatePath("/emergency")
   return emergency
 }

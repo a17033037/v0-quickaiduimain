@@ -67,6 +67,9 @@ export async function supabaseQuery<T = any>(
 export async function supabaseInsert<T = any>(table: string, data: any): Promise<{ data: T | null; error: any }> {
   try {
     const { supabaseUrl, supabaseKey } = getSupabaseCredentials()
+
+    console.log("[v0] Supabase insert request:", { table, data })
+
     const response = await fetch(`${supabaseUrl}/rest/v1/${table}`, {
       method: "POST",
       headers: {
@@ -78,14 +81,17 @@ export async function supabaseInsert<T = any>(table: string, data: any): Promise
       body: JSON.stringify(data),
     })
 
+    const responseText = await response.text()
+    console.log("[v0] Supabase insert response:", { status: response.status, body: responseText })
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      return { data: null, error: { message: `HTTP ${response.status}: ${responseText}` } }
     }
 
-    const result = await response.json()
-    return { data: result[0] || result, error: null }
+    const result = responseText ? JSON.parse(responseText) : null
+    return { data: result?.[0] || result, error: null }
   } catch (error) {
     console.error("[v0] Supabase insert error:", error)
-    return { data: null, error }
+    return { data: null, error: { message: error instanceof Error ? error.message : String(error) } }
   }
 }
