@@ -40,3 +40,5 @@ export function parseLocation(location: string): { lat: number; lng: number } | 
   }
   return null
 }
+
+export const getAddress = reverseGeocode
