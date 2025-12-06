@@ -9,11 +9,22 @@ In medical emergencies, every second counts. Yet 40% of emergency patients face 
 ## Key Features
 
 ### Core Functionality
-- **Real-Time Bed Availability**: Live tracking of 96+ hospitals across India with 4,000+ beds (general, emergency, ICU)
+- **Real-Time Bed Availability**: Live tracking of 96+ hospitals across India with 6,700+ beds (general, emergency, ICU)
 - **Smart Hospital Matching**: Automatic selection of nearest hospital with available beds
 - **OSRM-Powered Routing**: Real road-based navigation like Google Maps with turn-by-turn directions
 - **Emergency Classification**: Specialized routing for cardiac, accident, stroke, fire, police, and trauma emergencies
 - **Address Geocoding**: Displays human-readable addresses instead of raw coordinates using OpenStreetMap Nominatim
+
+### Navigation & UI
+- **Right-Side Navigation**: Clean hamburger menu that slides in from the right
+- **Hidden by Default**: Minimized navigation for cleaner interface
+- **Responsive Design**: Works seamlessly on mobile, tablet, and desktop
+
+### Admin Panel (Accessible at /admin)
+- **Emergency Management**: Update status of all active emergencies
+- **Hospital Administration**: Add new hospitals to the system
+- **Real-Time Monitoring**: Track all emergencies with critical flags
+- **No Authentication**: Direct URL access for quick administration (hackathon-ready)
 
 ### SOS Emergency System
 - **Floating SOS Button**: One-tap emergency access from any page
@@ -26,6 +37,7 @@ In medical emergencies, every second counts. Yet 40% of emergency patients face 
 - **Critical Emergency Flags**: Visual indicators (red pulsing badges) for SOS emergencies
 - **Hospital Capacity Overview**: Real-time bed availability across all hospitals
 - **Timeline Tracking**: Complete event history for each emergency
+- **Admin Controls**: Update emergency status directly from the dashboard
 
 ### Interactive Maps
 - **User Location Tracking**: Auto-detect and display user location with pulsing blue marker
@@ -136,12 +148,18 @@ In medical emergencies, every second counts. Yet 40% of emergency patients face 
 
 ### For Hospital Administrators
 
-1. Access the Dashboard to view:
-   - Total available beds by type
-   - All active emergencies with status
-   - Critical emergencies highlighted in red
-   - Complete timeline for each emergency
-2. Monitor real-time updates as emergencies progress
+1. Navigate directly to `/admin` (not shown in main navigation)
+2. View comprehensive statistics:
+   - Total hospitals: 96+
+   - Total beds tracked: 6,700+
+   - Active emergencies with severity indicators
+3. Update emergency status:
+   - Change from "new" to "assigned" to "en_route" to "at_hospital" to "resolved"
+   - Critical emergencies highlighted with red badges
+4. Add new hospitals:
+   - Enter hospital name, location (lat,lng), and bed counts
+   - Immediately available in the system
+5. Monitor real-time updates across all emergencies
 
 ## Key Differentiators
 
@@ -152,6 +170,8 @@ In medical emergencies, every second counts. Yet 40% of emergency patients face 
 - **Real-Time Updates**: Supabase integration for instant data sync
 - **Scalable**: Ready for nationwide expansion
 - **Critical Priority System**: SOS button for life-threatening emergencies
+- **Clean Navigation**: Hidden hamburger menu on the right for minimal distraction
+- **Admin-Friendly**: Quick access admin panel without complex authentication
 
 ## Performance
 

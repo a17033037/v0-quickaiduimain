@@ -67,14 +67,16 @@
 2. **Live Location Tracking** - Automatic GPS detection with address display
 3. **Smart Hospital Matching** - AI-powered recommendations based on bed availability
 4. **Interactive Maps** - OSRM-powered routing with actual road-based directions (like Google Maps)
-5. **Admin Dashboard** - Monitor all active emergencies with critical priority flags
+5. **Live Dashboard** - Monitor all emergencies with critical priority flags
 6. **SOS Emergency Button** - One-tap critical emergency dispatch with auto-assignment
 7. **Address Geocoding** - Human-readable addresses instead of coordinates
+8. **Right-Side Navigation** - Clean hamburger menu that stays hidden until needed
+9. **Admin Panel** - Update emergency status and add hospitals (accessible at /admin)
 
 **Infographic Suggestion:**
 - **"Feature Galaxy"** - Hub-and-spoke diagram with features as satellites
 - Icons for each feature with brief descriptions
-- Color-coded by category (Patient features vs Admin features)
+- Color-coded by category (Patient features vs Admin features vs Navigation)
 
 ---
 
@@ -181,20 +183,26 @@ Step-by-step flow:
 
 ## Slide 11: Live Demo - Admin Dashboard
 **Content:**
-- Screenshot of dashboard
+- Screenshot of dashboard and admin panel
 - Real-time metrics:
-  - Total available beds: 4,500+ General, 1,300+ Emergency, 900+ ICU
+  - Total available beds: 6,700+ across 96 hospitals
   - Active emergencies with status indicators
   - Critical emergencies with red pulsing badges and siren icons
   - Hospital status grid with bed counts
   - Emergency timeline showing complete event history
   - Address-based location display
+- **Admin Controls:**
+  - Update emergency status dropdown (new → assigned → en_route → at_hospital → resolved)
+  - Add new hospital form with name, location, and bed counts
+  - Accessible at /admin URL (not shown in navigation for clean UI)
+  - No authentication required (hackathon-ready)
 
 **Infographic Suggestion:**
 - **"Command Center View"** - Dashboard mockup with data visualization
 - Mini charts showing bed availability trends
-- Active emergency cards
+- Active emergency cards with admin controls highlighted
 - Heat map of hospital locations
+- Callout box showing admin panel add hospital form
 
 ---
 
@@ -226,6 +234,8 @@ Step-by-step flow:
 - **Mobile-First Design:** Responsive on all devices with optimized map performance
 - **Type Safety:** Full TypeScript implementation for reliability
 - **Scalable Architecture:** Ready for nationwide expansion to 1000+ hospitals
+- **Clean Navigation:** Right-side hamburger menu keeps UI minimal and distraction-free
+- **Admin-Ready:** Simple URL-based admin panel with no authentication hassle
 
 **Infographic Suggestion:**
 - **"Why QuickAid Wins"** - Comparison matrix
@@ -401,19 +411,18 @@ Step-by-step flow:
 
 ### Feature Walkthrough (2.5 minutes)
 1. **Homepage:** "QuickAid - your lifeline in medical emergencies"
-2. **Emergency Page:** "With one tap, your location is detected and displayed as a readable address"
-3. **Emergency Types:** "Select from cardiac, accident, stroke, fire, police, or trauma"
-4. **Hospital List:** "Instantly see 96+ nearby hospitals with REAL bed availability - general, emergency, and ICU"
-5. **Map Interaction:** "Click any hospital to see the actual road route using OSRM - the same technology powering many navigation apps"
-6. **Route Visualization:** "Watch as the route animates with directional arrows showing exactly how to get there"
-7. **SOS Button:** "But what if it's truly critical? Click the floating SOS button from any page"
-8. **SOS Confirmation:** "See the nearest hospital, estimated ambulance time of 8 minutes, and your exact address"
-9. **SOS Dispatch:** "Confirm, and the system automatically assigns the hospital, reserves a bed, and dispatches an ambulance"
-10. **Dashboard:** "Administrators see all active emergencies. Notice the critical ones with red pulsing badges"
-11. **Timeline:** "Every emergency has a complete timeline - from reporting to hospital assignment to ambulance dispatch"
-
-### Impact Statement (30 seconds)
-"From 45 minutes of uncertainty to 2 minutes of action. From calling 10 hospitals to seeing 96 at once. From straight lines to real roads. From manual dispatch to one-tap SOS. That's the QuickAid difference. This isn't just an app - it's a lifeline."
+2. **Navigation:** "Notice the clean interface - our hamburger menu on the right stays hidden until you need it"
+3. **Emergency Page:** "With one tap, your location is detected and displayed as a readable address"
+4. **Emergency Types:** "Select from cardiac, accident, stroke, fire, police, or trauma"
+5. **Hospital List:** "Instantly see 96+ nearby hospitals with REAL bed availability - general, emergency, and ICU"
+6. **Map Interaction:** "Click any hospital to see the actual road route using OSRM - the same technology powering many navigation apps"
+7. **Route Visualization:** "Watch as the route animates with directional arrows showing exactly how to get there"
+8. **SOS Button:** "But what if it's truly critical? Click the floating SOS button from any page"
+9. **SOS Confirmation:** "See the nearest hospital, estimated ambulance time of 8 minutes, and your exact address"
+10. **SOS Dispatch:** "Confirm, and the system automatically assigns the hospital, reserves a bed, and dispatches an ambulance"
+11. **Dashboard:** "Administrators see all active emergencies. Notice the critical ones with red pulsing badges"
+12. **Timeline:** "Every emergency has a complete timeline - from reporting to hospital assignment to ambulance dispatch"
+13. **Admin Panel:** "Navigate to /admin - not shown in the menu to keep it clean - and administrators can update any emergency status or add new hospitals instantly"
 
 ---
 
@@ -464,15 +473,18 @@ Step-by-step flow:
 
 ## Final Checklist
 
-- [ ] All slides reflect new features (SOS, OSRM routing, 96 hospitals, address geocoding)
+- [ ] All slides reflect new features (SOS, OSRM routing, 96 hospitals, address geocoding, right-side nav, admin panel)
 - [ ] Infographics show actual data (6,700+ beds, 6 cities, < 2 min response)
-- [ ] Demo includes both regular emergency AND SOS critical flow
+- [ ] Demo includes both regular emergency AND SOS critical flow AND admin panel
 - [ ] Screenshots show critical emergency badges on dashboard
 - [ ] Route visualization shows OSRM roads, not straight lines
 - [ ] Hospital count updated to 96+ across multiple cities
 - [ ] Impact metrics show 95% time reduction
 - [ ] SOS confirmation dialog featured prominently
-- [ ] Backup plan if demo fails (video recording of full flow)
+- [ ] Right-side hamburger navigation shown in screenshots
+- [ ] Admin panel capabilities demonstrated (update status, add hospitals)
+- [ ] Admin URL (/admin) mentioned but explained as hidden from nav
+- [ ] Backup plan if demo fails (video recording of full flow including admin)
 - [ ] Q&A answers prepared for technical and business questions
 
 ---
