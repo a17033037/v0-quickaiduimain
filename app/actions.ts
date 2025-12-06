@@ -2,7 +2,15 @@
 
 import { revalidatePath } from "next/cache"
 import { supabaseInsert } from "@/lib/supabase/fetch-client"
-import { crypto } from "crypto"
+
+// Simple UUID v4 generator that works in server environment
+function generateUUID(): string {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    const v = c === "x" ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
 
 function getSupabaseCredentials() {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -53,7 +61,8 @@ async function supabaseFetch(table: string, id: string) {
 }
 
 export async function createEmergency(data: { type: string; location: string }) {
-  const emergencyId = crypto.randomUUID()
+  // Use custom UUID generator instead of crypto.randomUUID()
+  const emergencyId = generateUUID()
 
   const timeline = [
     {
