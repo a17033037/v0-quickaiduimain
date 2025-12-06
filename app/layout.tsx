@@ -53,7 +53,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans antialiased`}>
         <Navigation />
-        <main className="lg:ml-0">{children}</main>
+        {/* Removed left margin since nav is now on right */}
+        <main>{children}</main>
         <SOSButton />
         <Analytics />
       </body>

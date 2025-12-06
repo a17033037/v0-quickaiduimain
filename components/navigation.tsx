@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, Activity, Home, LayoutDashboard, Shield } from "lucide-react"
+import { Menu, X, Activity, Home, LayoutDashboard } from "lucide-react"
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
@@ -13,7 +13,6 @@ export function Navigation() {
     { href: "/", label: "Home", icon: Home },
     { href: "/emergency", label: "Emergency", icon: Activity },
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin", label: "Admin", icon: Shield },
   ]
 
   const isActive = (href: string) => {
@@ -25,18 +24,18 @@ export function Navigation() {
     <>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-all lg:hidden"
+        className="fixed top-4 right-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-all"
         aria-label="Toggle menu"
       >
         {isOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
       </button>
 
-      {isOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setIsOpen(false)} />}
+      {isOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsOpen(false)} />}
 
       <nav
-        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 shadow-xl z-40 transition-transform duration-300 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 w-64`}
+        className={`fixed top-0 right-0 h-full bg-white border-l border-gray-200 shadow-xl z-40 transition-transform duration-300 ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        } w-64`}
       >
         <div className="p-6">
           <div className="flex items-center gap-2 mb-8">
@@ -75,8 +74,6 @@ export function Navigation() {
           </p>
         </div>
       </nav>
-
-      <div className="hidden lg:block w-64" />
     </>
   )
 }
