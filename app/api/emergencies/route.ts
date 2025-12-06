@@ -1,20 +1,12 @@
-import { createClient } from "@/lib/supabase/server"
+import { getEmergencies, createEmergency } from "@/lib/mock-data"
 import { NextResponse } from "next/server"
 
 export async function GET() {
-  const supabase = await createClient()
-
-  const { data, error } = await supabase.from("emergencies").select("*").order("created_at", { ascending: false })
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json(data)
+  const emergencies = getEmergencies()
+  return NextResponse.json(emergencies)
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
   const body = await request.json()
 
   const { type, location } = body
@@ -30,20 +22,13 @@ export async function POST(request: Request) {
     },
   ]
 
-  const { data, error } = await supabase
-    .from("emergencies")
-    .insert({
-      type,
-      location: location || "Unknown location",
-      status: "new",
-      timeline,
-    })
-    .select()
-    .single()
+  const newEmergency = createEmergency({
+    type,
+    location: location || "Unknown location",
+    status: "new",
+    created_at: new Date().toISOString(),
+    timeline,
+  })
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json(data)
+  return NextResponse.json(newEmergency)
 }

@@ -1,33 +1,26 @@
-import { createClient } from "@/lib/supabase/server"
+import { getEmergency, updateEmergency } from "@/lib/mock-data"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createClient()
   const { id } = await params
 
-  const { data, error } = await supabase.from("emergencies").select("*").eq("id", id).single()
+  const emergency = getEmergency(id)
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (!emergency) {
+    return NextResponse.json({ error: "Emergency not found" }, { status: 404 })
   }
 
-  return NextResponse.json(data)
+  return NextResponse.json(emergency)
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createClient()
   const { id } = await params
   const body = await request.json()
 
-  // Get current emergency
-  const { data: currentEmergency, error: fetchError } = await supabase
-    .from("emergencies")
-    .select("*")
-    .eq("id", id)
-    .single()
+  const currentEmergency = getEmergency(id)
 
-  if (fetchError) {
-    return NextResponse.json({ error: fetchError.message }, { status: 500 })
+  if (!currentEmergency) {
+    return NextResponse.json({ error: "Emergency not found" }, { status: 404 })
   }
 
   // Update timeline if needed
@@ -46,11 +39,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (body.status) updateData.status = body.status
   if (body.selected_hospital_id) updateData.selected_hospital_id = body.selected_hospital_id
 
-  const { data, error } = await supabase.from("emergencies").update(updateData).eq("id", id).select().single()
+  const updatedEmergency = updateEmergency(id, updateData)
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (!updatedEmergency) {
+    return NextResponse.json({ error: "Failed to update emergency" }, { status: 500 })
   }
 
-  return NextResponse.json(data)
+  return NextResponse.json(updatedEmergency)
 }

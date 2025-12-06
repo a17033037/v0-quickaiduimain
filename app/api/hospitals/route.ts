@@ -1,14 +1,7 @@
-import { createClient } from "@/lib/supabase/server"
+import { getHospitals } from "@/lib/mock-data"
 import { NextResponse } from "next/server"
 
 export async function GET() {
-  const supabase = await createClient()
-
-  const { data, error } = await supabase.from("hospitals").select("*").order("distance_km", { ascending: true })
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json(data)
+  const hospitals = getHospitals()
+  return NextResponse.json(hospitals)
 }

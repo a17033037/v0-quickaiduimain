@@ -1,14 +1,16 @@
-import { createClient } from "@/lib/supabase/server"
+import { getHospital, updateHospital } from "@/lib/mock-data"
 import { NextResponse } from "next/server"
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createClient()
   const { id } = await params
   const body = await request.json()
 
-  const updateData: any = {
-    last_updated: new Date().toISOString(),
+  const hospital = getHospital(id)
+  if (!hospital) {
+    return NextResponse.json({ error: "Hospital not found" }, { status: 404 })
   }
+
+  const updateData: any = {}
 
   if (typeof body.icu_beds_available === "number") {
     updateData.icu_beds_available = Math.max(0, body.icu_beds_available)
@@ -20,11 +22,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     updateData.emergency_beds_available = Math.max(0, body.emergency_beds_available)
   }
 
-  const { data, error } = await supabase.from("hospitals").update(updateData).eq("id", id).select().single()
+  const updatedHospital = updateHospital(id, updateData)
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (!updatedHospital) {
+    return NextResponse.json({ error: "Failed to update hospital" }, { status: 500 })
   }
 
-  return NextResponse.json(data)
+  return NextResponse.json(updatedHospital)
 }
