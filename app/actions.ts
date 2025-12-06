@@ -167,6 +167,61 @@ export async function updateEmergencyStatus(emergencyId: string, status: string,
   return updated[0]
 }
 
+export async function getSOSPreview(location: string) {
+  const { supabaseUrl, supabaseKey } = getSupabaseCredentials()
+
+  // Parse location
+  const [lat, lng] = location.split(",").map(Number)
+
+  // Find nearest hospital with available beds
+  const response = await fetch(
+    `${supabaseUrl}/rest/v1/hospitals?select=*&emergency_beds_available=gte.1&order=distance_km.asc&limit=1`,
+    {
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+      },
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error("Failed to find nearest hospital")
+  }
+
+  const hospitals = await response.json()
+
+  if (!hospitals || hospitals.length === 0) {
+    throw new Error("No hospitals with available beds found")
+  }
+
+  const nearestHospital = hospitals[0]
+
+  // Calculate estimated time (rough estimate: 2 min per km in emergency)
+  const estimatedTime = Math.ceil(nearestHospital.distance_km * 2)
+
+  // Get user address via reverse geocoding
+  let userAddress = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+  try {
+    const geoResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, {
+      headers: {
+        "User-Agent": "QuickAid Emergency App",
+      },
+    })
+    if (geoResponse.ok) {
+      const geoData = await geoResponse.json()
+      userAddress = geoData.display_name || userAddress
+    }
+  } catch (error) {
+    console.error("[v0] Geocoding error:", error)
+  }
+
+  return {
+    hospital: nearestHospital,
+    estimatedTime,
+    userAddress,
+  }
+}
+
 export async function sosEmergency(location: string) {
   const { supabaseUrl, supabaseKey } = getSupabaseCredentials()
 
@@ -223,7 +278,8 @@ export async function sosEmergency(location: string) {
     status: "en_route",
     selected_hospital_id: nearestHospital.id,
     patient_name: "SOS Emergency",
-    description: "Emergency SOS activation - requires immediate assistance",
+    description: "CRITICAL - Emergency SOS activation - requires immediate assistance",
+    severity: "critical", // Mark as critical severity
     timeline: JSON.stringify(timeline),
   })
 
