@@ -18,11 +18,13 @@ import {
   Navigation2,
   Loader2,
 } from "lucide-react"
+import { reverseGeocode, parseLocation } from "@/lib/geocoding"
 
 export default function DashboardClient() {
   const [emergencies, setEmergencies] = useState<Emergency[]>([])
   const [hospitals, setHospitals] = useState<Hospital[]>([])
   const [loading, setLoading] = useState(true)
+  const [addresses, setAddresses] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,7 +34,21 @@ export default function DashboardClient() {
         const [hospitalsData, emergenciesData] = await Promise.all([hospitalsRes.json(), emergenciesRes.json()])
 
         setHospitals(Array.isArray(hospitalsData) ? hospitalsData : [])
-        setEmergencies(Array.isArray(emergenciesData) ? emergenciesData : [])
+        const emergenciesArray = Array.isArray(emergenciesData) ? emergenciesData : []
+        setEmergencies(emergenciesArray)
+
+        const addressPromises = emergenciesArray.map(async (emergency: Emergency) => {
+          const coords = parseLocation(emergency.location)
+          if (coords) {
+            const address = await reverseGeocode(coords.lat, coords.lng)
+            return [emergency.id, address]
+          }
+          return [emergency.id, emergency.location]
+        })
+
+        const resolvedAddresses = await Promise.all(addressPromises)
+        const addressMap = Object.fromEntries(resolvedAddresses)
+        setAddresses(addressMap)
       } catch (error) {
         console.error("[v0] Error fetching data:", error)
         setHospitals([])
@@ -85,7 +101,7 @@ export default function DashboardClient() {
       <div className="container mx-auto px-4 py-6 md:py-10">
         {loading ? (
           <div className="flex justify-center items-center min-h-screen">
-            <Loader2 className="h-12 w-12 animate-spin" />
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
           </div>
         ) : (
           <>
@@ -165,27 +181,32 @@ export default function DashboardClient() {
                     <p className="text-center text-muted-foreground py-8">No active emergencies</p>
                   ) : (
                     activeEmergencies.map((emergency) => (
-                      <Card key={emergency.id} className="p-4">
+                      <Card key={emergency.id} className="p-4 hover:shadow-md transition-shadow">
                         <div className="space-y-3">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
                                 <Badge className={getStatusColor(emergency.status)}>
                                   <span className="flex items-center gap-1">
                                     {getStatusIcon(emergency.status)}
-                                    {emergency.status}
+                                    {emergency.status.replace("_", " ")}
                                   </span>
                                 </Badge>
-                                <Badge variant="outline">{emergency.type}</Badge>
+                                <Badge variant="outline" className="capitalize">
+                                  {emergency.type}
+                                </Badge>
                               </div>
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <MapPin className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{emergency.location}</span>
+                              <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                                <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
+                                <span className="break-words">{addresses[emergency.id] || emergency.location}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
                               <Clock className="h-3 w-3" />
-                              {new Date(emergency.created_at).toLocaleTimeString()}
+                              {new Date(emergency.created_at).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </div>
                           </div>
 
@@ -194,7 +215,10 @@ export default function DashboardClient() {
                               {emergency.timeline.slice(-3).map((event, idx) => (
                                 <div key={idx} className="text-xs">
                                   <span className="text-muted-foreground">
-                                    {new Date(event.timestamp || event.time).toLocaleTimeString()}
+                                    {new Date(event.timestamp || event.time).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
                                   </span>
                                   <span className="ml-2">{event.event}</span>
                                 </div>

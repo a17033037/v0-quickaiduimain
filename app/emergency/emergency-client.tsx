@@ -9,6 +9,7 @@ import EmergencyTypeSelector from "@/components/emergency-type-selector"
 import HospitalMap from "@/components/hospital-map"
 import { createEmergency, selectHospital } from "@/app/actions"
 import type { Hospital, EmergencyType } from "@/lib/types"
+import { reverseGeocode, parseLocation } from "@/lib/geocoding"
 import { Activity, Bed, Heart, MapPin, Navigation, Loader2 } from "lucide-react"
 
 export default function EmergencyClient() {
@@ -17,18 +18,34 @@ export default function EmergencyClient() {
   const [loading, setLoading] = useState(true)
   const [selectedType, setSelectedType] = useState<EmergencyType | null>(null)
   const [location, setLocation] = useState<string>("")
+  const [userAddress, setUserAddress] = useState<string>("")
   const [userCoordinates, setUserCoordinates] = useState<{ lat: number; lng: number } | undefined>()
   const [isGettingLocation, setIsGettingLocation] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null)
   const [emergencyId, setEmergencyId] = useState<string | null>(null)
+  const [hospitalAddresses, setHospitalAddresses] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const fetchHospitals = async () => {
       try {
         const response = await fetch("/api/hospitals")
         const data = await response.json()
-        setHospitals(Array.isArray(data) ? data : [])
+        const hospitalsArray = Array.isArray(data) ? data : []
+        setHospitals(hospitalsArray)
+
+        const addressPromises = hospitalsArray.map(async (hospital: Hospital) => {
+          const coords = parseLocation(hospital.location)
+          if (coords) {
+            const address = await reverseGeocode(coords.lat, coords.lng)
+            return [hospital.id, address]
+          }
+          return [hospital.id, hospital.location]
+        })
+
+        const resolvedAddresses = await Promise.all(addressPromises)
+        const addressMap = Object.fromEntries(resolvedAddresses)
+        setHospitalAddresses(addressMap)
       } catch (error) {
         console.error("[v0] Error fetching hospitals:", error)
         setHospitals([])
@@ -41,21 +58,25 @@ export default function EmergencyClient() {
     getUserLocation()
   }, [])
 
-  const getUserLocation = () => {
+  const getUserLocation = async () => {
     setIsGettingLocation(true)
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords
         setLocation(`${latitude.toFixed(6)},${longitude.toFixed(6)}`)
         setUserCoordinates({ lat: latitude, lng: longitude })
+        const address = await reverseGeocode(latitude, longitude)
+        setUserAddress(address)
         setIsGettingLocation(false)
       },
-      (error) => {
+      async (error) => {
         console.error("[v0] Geolocation error:", error)
         const defaultLat = 19.076
         const defaultLng = 72.8777
         setLocation(`${defaultLat},${defaultLng}`)
         setUserCoordinates({ lat: defaultLat, lng: defaultLng })
+        const address = await reverseGeocode(defaultLat, defaultLng)
+        setUserAddress(address)
         setIsGettingLocation(false)
       },
     )
@@ -141,28 +162,32 @@ export default function EmergencyClient() {
 
                 <div>
                   <label className="text-sm font-medium mb-2 block">Your Location</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="Detecting location..."
-                      className="flex-1 px-3 py-2 border rounded-md text-sm"
-                    />
-                    <Button size="icon" variant="outline" onClick={getUserLocation} disabled={isGettingLocation}>
-                      {isGettingLocation ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Navigation className="h-4 w-4" />
-                      )}
-                    </Button>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <div className="flex-1 px-3 py-2 border rounded-md text-sm bg-gray-50 min-h-[2.5rem] flex items-center">
+                        {isGettingLocation ? (
+                          <span className="text-muted-foreground">Detecting location...</span>
+                        ) : userAddress ? (
+                          <span className="text-sm">{userAddress}</span>
+                        ) : (
+                          <span className="text-muted-foreground">Click to get location</span>
+                        )}
+                      </div>
+                      <Button size="icon" variant="outline" onClick={getUserLocation} disabled={isGettingLocation}>
+                        {isGettingLocation ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Navigation className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    {userCoordinates && (
+                      <p className="text-xs text-green-600 flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        Location detected successfully
+                      </p>
+                    )}
                   </div>
-                  {userCoordinates && (
-                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      Location detected
-                    </p>
-                  )}
                 </div>
 
                 {!emergencyId && (
@@ -180,38 +205,38 @@ export default function EmergencyClient() {
             {emergencyId && (
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Available Hospitals ({filteredHospitals.length})</h2>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                   {filteredHospitals.map((hospital) => (
                     <Card
                       key={hospital.id}
                       className={`p-4 cursor-pointer transition-all hover:shadow-md ${
-                        selectedHospitalId === hospital.id ? "ring-2 ring-red-600" : ""
+                        selectedHospitalId === hospital.id ? "ring-2 ring-red-600 bg-red-50" : ""
                       }`}
                       onClick={() => setSelectedHospitalId(hospital.id)}
                     >
                       <div className="space-y-2">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-semibold text-sm leading-tight">{hospital.name}</h3>
-                          <Badge variant="secondary" className="shrink-0">
+                          <h3 className="font-semibold text-sm leading-tight flex-1">{hospital.name}</h3>
+                          <Badge variant="secondary" className="shrink-0 bg-blue-100 text-blue-700">
                             {hospital.distance_km} km
                           </Badge>
                         </div>
 
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPin className="h-3 w-3" />
-                          <span className="truncate">{hospital.location}</span>
+                        <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3 shrink-0 mt-0.5" />
+                          <span className="break-words">{hospitalAddresses[hospital.id] || hospital.location}</span>
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 pt-2 text-xs">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 justify-center p-1.5 bg-blue-50 rounded">
                             <Bed className="h-3 w-3 text-blue-600" />
                             <span className="font-medium">{hospital.general_beds_available}</span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 justify-center p-1.5 bg-orange-50 rounded">
                             <Activity className="h-3 w-3 text-orange-600" />
                             <span className="font-medium">{hospital.emergency_beds_available}</span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 justify-center p-1.5 bg-red-50 rounded">
                             <Heart className="h-3 w-3 text-red-600" />
                             <span className="font-medium">{hospital.icu_beds_available}</span>
                           </div>
