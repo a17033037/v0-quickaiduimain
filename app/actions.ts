@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { supabaseInsert } from "@/lib/supabase/fetch-client"
+import { emergencyTypeToDbType, type EmergencyType } from "@/lib/types"
 
 // Simple UUID v4 generator that works in server environment
 function generateUUID(): string {
@@ -60,7 +61,7 @@ async function supabaseFetch(table: string, id: string) {
   return data[0]
 }
 
-export async function createEmergency(data: { type: string; location: string }) {
+export async function createEmergency(data: { type: EmergencyType; location: string }) {
   // Use custom UUID generator instead of crypto.randomUUID()
   const emergencyId = generateUUID()
 
@@ -72,11 +73,18 @@ export async function createEmergency(data: { type: string; location: string }) 
     },
   ]
 
-  console.log("[v0] Creating emergency:", { emergencyId, type: data.type, location: data.location })
+  const dbType = emergencyTypeToDbType(data.type)
+
+  console.log("[v0] Creating emergency:", {
+    emergencyId,
+    uiType: data.type,
+    dbType,
+    location: data.location,
+  })
 
   const { data: emergency, error } = await supabaseInsert("emergencies", {
     id: emergencyId,
-    type: data.type,
+    type: dbType, // Use mapped database type
     location: data.location,
     status: "new",
     timeline: JSON.stringify(timeline),

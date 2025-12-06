@@ -29,6 +29,21 @@ export interface Emergency {
 
 export type EmergencyType = "cardiac" | "accident" | "stroke" | "respiratory" | "trauma" | "pediatric"
 
+export const emergencyTypeToDbType = (type: EmergencyType): "medical" | "fire" | "police" => {
+  switch (type) {
+    case "cardiac":
+    case "stroke":
+    case "respiratory":
+    case "pediatric":
+      return "medical"
+    case "accident":
+    case "trauma":
+      return "medical" // Road accidents and trauma are also medical emergencies
+    default:
+      return "medical"
+  }
+}
+
 export const emergencyTypeLabels: Record<EmergencyType, string> = {
   cardiac: "Cardiac Emergency",
   accident: "Road Accident",
