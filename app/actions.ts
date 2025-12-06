@@ -166,3 +166,91 @@ export async function updateEmergencyStatus(emergencyId: string, status: string,
   revalidatePath("/dashboard")
   return updated[0]
 }
+
+export async function sosEmergency(location: string) {
+  const { supabaseUrl, supabaseKey } = getSupabaseCredentials()
+
+  // Parse location
+  const [lat, lng] = location.split(",").map(Number)
+
+  // Find nearest hospital with available beds
+  const response = await fetch(
+    `${supabaseUrl}/rest/v1/hospitals?select=*&emergency_beds_available=gte.1&order=distance_km.asc&limit=1`,
+    {
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+      },
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error("Failed to find nearest hospital")
+  }
+
+  const hospitals = await response.json()
+
+  if (!hospitals || hospitals.length === 0) {
+    throw new Error("No hospitals with available beds found")
+  }
+
+  const nearestHospital = hospitals[0]
+
+  // Create emergency with medical type (generic)
+  const emergencyId = generateUUID()
+  const timeline = [
+    {
+      time: new Date().toISOString(),
+      event: "SOS Emergency activated",
+      status: "initiated",
+    },
+    {
+      time: new Date().toISOString(),
+      event: `Auto-assigned to ${nearestHospital.name}`,
+      status: "assigned",
+    },
+    {
+      time: new Date().toISOString(),
+      event: "Ambulance dispatched",
+      status: "en_route",
+    },
+  ]
+
+  const { data: emergency, error } = await supabaseInsert("emergencies", {
+    id: emergencyId,
+    type: "medical",
+    location,
+    status: "en_route",
+    selected_hospital_id: nearestHospital.id,
+    patient_name: "SOS Emergency",
+    description: "Emergency SOS activation - requires immediate assistance",
+    timeline: JSON.stringify(timeline),
+  })
+
+  if (error) {
+    console.error("[v0] SOS Emergency creation failed:", error)
+    throw new Error(error.message || "Failed to create SOS emergency")
+  }
+
+  // Decrement hospital emergency bed count
+  await fetch(`${supabaseUrl}/rest/v1/hospitals?id=eq.${nearestHospital.id}`, {
+    method: "PATCH",
+    headers: {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${supabaseKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      emergency_beds_available: Math.max(0, nearestHospital.emergency_beds_available - 1),
+    }),
+  })
+
+  revalidatePath("/emergency")
+  revalidatePath("/dashboard")
+
+  return {
+    emergency,
+    hospital: nearestHospital,
+  }
+}

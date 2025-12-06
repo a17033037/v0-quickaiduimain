@@ -64,7 +64,7 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
         zoomAnimation: true,
         fadeAnimation: true,
         markerZoomAnimation: true,
-      }).setView([center.lat, center.lng], 13)
+      }).setView([center.lat, center.lng], userLocation ? 16 : 13) // Higher zoom for user location
       mapInstanceRef.current = map
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -307,29 +307,97 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
             }
           }
 
-          const routeLine = L.polyline(
-            [
-              [userLocation.lat, userLocation.lng],
-              [selectedHospital.coordinates.lat, selectedHospital.coordinates.lng],
-            ],
-            {
-              color: "#dc2626",
-              weight: 5,
-              opacity: 0.8,
-              dashArray: "15, 10",
-              lineJoin: "round",
-              lineCap: "round",
-              className: "animated-route",
-            },
-          ).addTo(map)
+          try {
+            // Fetch route from OSRM (Open Source Routing Machine)
+            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${userLocation.lng},${userLocation.lat};${selectedHospital.coordinates.lng},${selectedHospital.coordinates.lat}?overview=full&geometries=geojson`
+            const response = await fetch(osrmUrl)
+            const data = await response.json()
 
-          routePolylineRef.current = routeLine
+            if (data.code === "Ok" && data.routes && data.routes[0]) {
+              const route = data.routes[0]
+              const coordinates = route.geometry.coordinates.map((coord: [number, number]) => [coord[1], coord[0]]) // Convert [lng, lat] to [lat, lng]
 
-          const bounds = L.latLngBounds([
-            [userLocation.lat, userLocation.lng],
-            [selectedHospital.coordinates.lat, selectedHospital.coordinates.lng],
-          ])
-          map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15 })
+              const routeLine = L.polyline(coordinates, {
+                color: "#dc2626",
+                weight: 5,
+                opacity: 0.9,
+                lineJoin: "round",
+                lineCap: "round",
+                className: "animated-route",
+              }).addTo(map)
+
+              routePolylineRef.current = routeLine
+
+              // Add directional arrows along the route
+              const arrowInterval = Math.floor(coordinates.length / 5)
+              for (let i = arrowInterval; i < coordinates.length; i += arrowInterval) {
+                const arrowIcon = L.divIcon({
+                  className: "route-arrow",
+                  html: `<div style="color: #dc2626; font-size: 20px; transform: rotate(${getArrowRotation(coordinates[i - 1], coordinates[i])}deg);">▶</div>`,
+                  iconSize: [20, 20],
+                  iconAnchor: [10, 10],
+                })
+                const arrowMarker = L.marker(coordinates[i], { icon: arrowIcon, interactive: false }).addTo(map)
+                markersRef.current.push(arrowMarker)
+              }
+
+              const bounds = L.latLngBounds([
+                [userLocation.lat, userLocation.lng],
+                [selectedHospital.coordinates.lat, selectedHospital.coordinates.lng],
+              ])
+              map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15 })
+            } else {
+              // Fallback to straight line if OSRM fails
+              const routeLine = L.polyline(
+                [
+                  [userLocation.lat, userLocation.lng],
+                  [selectedHospital.coordinates.lat, selectedHospital.coordinates.lng],
+                ],
+                {
+                  color: "#dc2626",
+                  weight: 5,
+                  opacity: 0.8,
+                  dashArray: "15, 10",
+                  lineJoin: "round",
+                  lineCap: "round",
+                  className: "animated-route",
+                },
+              ).addTo(map)
+
+              routePolylineRef.current = routeLine
+
+              const bounds = L.latLngBounds([
+                [userLocation.lat, userLocation.lng],
+                [selectedHospital.coordinates.lat, selectedHospital.coordinates.lng],
+              ])
+              map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15 })
+            }
+          } catch (error) {
+            console.error("Error fetching route:", error)
+            // Fallback to straight line
+            const routeLine = L.polyline(
+              [
+                [userLocation.lat, userLocation.lng],
+                [selectedHospital.coordinates.lat, selectedHospital.coordinates.lng],
+              ],
+              {
+                color: "#dc2626",
+                weight: 5,
+                opacity: 0.8,
+                dashArray: "15, 10",
+                lineJoin: "round",
+                lineCap: "round",
+                className: "animated-route",
+              },
+            ).addTo(map)
+
+            routePolylineRef.current = routeLine
+          }
+        }
+      } else if (!selectedHospitalId && userLocation) {
+        if (markersRef.current.length > 1) {
+          const bounds = L.latLngBounds(markersRef.current.map((m) => m.getLatLng()))
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
         }
       } else {
         if (markersRef.current.length > 0) {
@@ -350,6 +418,13 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
       return () => {
         window.removeEventListener("resize", handleResize)
       }
+    }
+
+    // Helper function to calculate arrow rotation
+    const getArrowRotation = (from: [number, number], to: [number, number]) => {
+      const dy = to[0] - from[0]
+      const dx = to[1] - from[1]
+      return (Math.atan2(dy, dx) * 180) / Math.PI
     }
 
     initMap()
@@ -397,11 +472,11 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         .animated-route {
-          animation: dash 1.5s linear infinite;
+          animation: flow 1.5s linear infinite;
         }
-        @keyframes dash {
+        @keyframes flow {
           to {
-            stroke-dashoffset: -25;
+            stroke-dashoffset: -20;
           }
         }
         .leaflet-container {
@@ -421,6 +496,9 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
           backdrop-filter: blur(8px) !important;
           padding: 2px 8px !important;
           border-radius: 4px !important;
+        }
+        .route-arrow {
+          pointer-events: none;
         }
       `}</style>
       <div ref={mapRef} className="w-full h-full min-h-[400px] rounded-lg shadow-lg overflow-hidden" />
