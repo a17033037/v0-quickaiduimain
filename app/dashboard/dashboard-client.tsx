@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   Navigation2,
   Loader2,
+  AlertTriangle,
+  Siren,
 } from "lucide-react"
 import { reverseGeocode, parseLocation } from "@/lib/geocoding"
 
@@ -86,6 +88,28 @@ export default function DashboardClient() {
         return <CheckCircle2 className="h-4 w-4" />
       default:
         return <Activity className="h-4 w-4" />
+    }
+  }
+
+  const getSeverityColor = (severity?: string) => {
+    switch (severity) {
+      case "critical":
+        return "bg-red-600 text-white border-red-600 animate-pulse"
+      case "urgent":
+        return "bg-orange-500 text-white border-orange-500"
+      default:
+        return "bg-gray-500 text-white border-gray-500"
+    }
+  }
+
+  const getSeverityIcon = (severity?: string) => {
+    switch (severity) {
+      case "critical":
+        return <Siren className="h-4 w-4" />
+      case "urgent":
+        return <AlertTriangle className="h-4 w-4" />
+      default:
+        return null
     }
   }
 
@@ -181,11 +205,24 @@ export default function DashboardClient() {
                     <p className="text-center text-muted-foreground py-8">No active emergencies</p>
                   ) : (
                     activeEmergencies.map((emergency) => (
-                      <Card key={emergency.id} className="p-4 hover:shadow-md transition-shadow">
+                      <Card
+                        key={emergency.id}
+                        className={`p-4 hover:shadow-md transition-shadow ${
+                          emergency.severity === "critical" ? "border-2 border-red-600 bg-red-50/50" : ""
+                        }`}
+                      >
                         <div className="space-y-3">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                {emergency.severity && emergency.severity !== "normal" && (
+                                  <Badge className={getSeverityColor(emergency.severity)}>
+                                    <span className="flex items-center gap-1">
+                                      {getSeverityIcon(emergency.severity)}
+                                      {emergency.severity.toUpperCase()}
+                                    </span>
+                                  </Badge>
+                                )}
                                 <Badge className={getStatusColor(emergency.status)}>
                                   <span className="flex items-center gap-1">
                                     {getStatusIcon(emergency.status)}

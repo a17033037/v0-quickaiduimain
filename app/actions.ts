@@ -196,29 +196,12 @@ export async function getSOSPreview(location: string) {
 
   const nearestHospital = hospitals[0]
 
-  // Calculate estimated time (rough estimate: 2 min per km in emergency)
-  const estimatedTime = Math.ceil(nearestHospital.distance_km * 2)
-
-  // Get user address via reverse geocoding
-  let userAddress = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
-  try {
-    const geoResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, {
-      headers: {
-        "User-Agent": "QuickAid Emergency App",
-      },
-    })
-    if (geoResponse.ok) {
-      const geoData = await geoResponse.json()
-      userAddress = geoData.display_name || userAddress
-    }
-  } catch (error) {
-    console.error("[v0] Geocoding error:", error)
-  }
+  // Calculate estimated time (assuming average speed of 40 km/h for ambulance)
+  const estimatedTime = Math.ceil((nearestHospital.distance_km / 40) * 60)
 
   return {
     hospital: nearestHospital,
     estimatedTime,
-    userAddress,
   }
 }
 
@@ -256,7 +239,7 @@ export async function sosEmergency(location: string) {
   const timeline = [
     {
       time: new Date().toISOString(),
-      event: "SOS Emergency activated",
+      event: "CRITICAL: SOS Emergency activated",
       status: "initiated",
     },
     {
@@ -266,7 +249,7 @@ export async function sosEmergency(location: string) {
     },
     {
       time: new Date().toISOString(),
-      event: "Ambulance dispatched",
+      event: "Ambulance dispatched immediately",
       status: "en_route",
     },
   ]
@@ -278,8 +261,8 @@ export async function sosEmergency(location: string) {
     status: "en_route",
     selected_hospital_id: nearestHospital.id,
     patient_name: "SOS Emergency",
-    description: "CRITICAL - Emergency SOS activation - requires immediate assistance",
-    severity: "critical", // Mark as critical severity
+    description: "CRITICAL: Emergency SOS activation - requires immediate assistance",
+    severity: "critical",
     timeline: JSON.stringify(timeline),
   })
 

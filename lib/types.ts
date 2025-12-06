@@ -19,6 +19,7 @@ export interface Emergency {
   type: string
   location: string
   status: string
+  severity?: "normal" | "urgent" | "critical"
   selected_hospital_id?: string
   timeline?: Array<{
     time: string
