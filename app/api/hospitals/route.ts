@@ -1,27 +1,22 @@
 import { NextResponse } from "next/server"
+import { supabaseQuery } from "@/lib/supabase/fetch-client"
 
 export async function GET() {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/hospitals?select=*&order=distance_km.asc`,
-      {
-        headers: {
-          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
-        },
-        cache: "no-store",
-      },
-    )
+    console.log("[v0] Fetching hospitals from Supabase...")
 
-    const hospitals = await response.json()
+    const { data: hospitals, error } = await supabaseQuery("hospitals", {
+      order: { column: "distance_km", ascending: true },
+    })
 
-    if (!response.ok) {
-      console.error("[v0] Error fetching hospitals:", hospitals)
+    if (error) {
+      console.error("[v0] Error fetching hospitals:", error)
       return NextResponse.json({ error: "Failed to fetch hospitals" }, { status: 500 })
     }
 
-    // Parse coordinates from location string
-    const hospitalsWithCoords = hospitals.map((h: any) => ({
+    console.log("[v0] Found hospitals:", hospitals?.length || 0)
+
+    const hospitalsWithCoords = (hospitals || []).map((h: any) => ({
       ...h,
       coordinates: h.location
         ? {

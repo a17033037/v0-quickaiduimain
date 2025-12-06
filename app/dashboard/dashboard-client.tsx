@@ -31,10 +31,12 @@ export default function DashboardClient() {
 
         const [hospitalsData, emergenciesData] = await Promise.all([hospitalsRes.json(), emergenciesRes.json()])
 
-        setHospitals(hospitalsData)
-        setEmergencies(emergenciesData)
+        setHospitals(Array.isArray(hospitalsData) ? hospitalsData : [])
+        setEmergencies(Array.isArray(emergenciesData) ? emergenciesData : [])
       } catch (error) {
         console.error("[v0] Error fetching data:", error)
+        setHospitals([])
+        setEmergencies([])
       } finally {
         setLoading(false)
       }
@@ -71,10 +73,12 @@ export default function DashboardClient() {
     }
   }
 
-  const activeEmergencies = emergencies.filter((e) => e.status !== "completed")
-  const totalBeds = hospitals.reduce((acc, h) => acc + h.general_beds_available, 0)
-  const totalEmergencyBeds = hospitals.reduce((acc, h) => acc + h.emergency_beds_available, 0)
-  const totalICUBeds = hospitals.reduce((acc, h) => acc + h.icu_beds_available, 0)
+  const activeEmergencies = Array.isArray(emergencies) ? emergencies.filter((e) => e.status !== "completed") : []
+  const totalBeds = Array.isArray(hospitals) ? hospitals.reduce((acc, h) => acc + h.general_beds_available, 0) : 0
+  const totalEmergencyBeds = Array.isArray(hospitals)
+    ? hospitals.reduce((acc, h) => acc + h.emergency_beds_available, 0)
+    : 0
+  const totalICUBeds = Array.isArray(hospitals) ? hospitals.reduce((acc, h) => acc + h.icu_beds_available, 0) : 0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">

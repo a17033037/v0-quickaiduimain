@@ -17,6 +17,7 @@ export default function EmergencyClient() {
   const [loading, setLoading] = useState(true)
   const [selectedType, setSelectedType] = useState<EmergencyType | null>(null)
   const [location, setLocation] = useState<string>("")
+  const [userCoordinates, setUserCoordinates] = useState<{ lat: number; lng: number } | undefined>()
   const [isGettingLocation, setIsGettingLocation] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null)
@@ -27,15 +28,17 @@ export default function EmergencyClient() {
       try {
         const response = await fetch("/api/hospitals")
         const data = await response.json()
-        setHospitals(data)
+        setHospitals(Array.isArray(data) ? data : [])
       } catch (error) {
         console.error("[v0] Error fetching hospitals:", error)
+        setHospitals([])
       } finally {
         setLoading(false)
       }
     }
 
     fetchHospitals()
+    getUserLocation()
   }, [])
 
   const getUserLocation = () => {
@@ -44,11 +47,15 @@ export default function EmergencyClient() {
       (position) => {
         const { latitude, longitude } = position.coords
         setLocation(`${latitude.toFixed(6)},${longitude.toFixed(6)}`)
+        setUserCoordinates({ lat: latitude, lng: longitude })
         setIsGettingLocation(false)
       },
       (error) => {
         console.error("[v0] Geolocation error:", error)
-        alert("Unable to get your location. Please enter it manually.")
+        const defaultLat = 19.076
+        const defaultLng = 72.8777
+        setLocation(`${defaultLat},${defaultLng}`)
+        setUserCoordinates({ lat: defaultLat, lng: defaultLng })
         setIsGettingLocation(false)
       },
     )
@@ -90,13 +97,14 @@ export default function EmergencyClient() {
     }
   }
 
-  // Filter hospitals based on emergency type
-  const filteredHospitals = hospitals.filter((h) => {
-    if (selectedType === "cardiac" || selectedType === "stroke") {
-      return h.icu_beds_available > 0
-    }
-    return h.emergency_beds_available > 0
-  })
+  const filteredHospitals = Array.isArray(hospitals)
+    ? hospitals.filter((h) => {
+        if (selectedType === "cardiac" || selectedType === "stroke") {
+          return h.icu_beds_available > 0
+        }
+        return h.emergency_beds_available > 0
+      })
+    : []
 
   if (loading) {
     return (
@@ -139,13 +147,23 @@ export default function EmergencyClient() {
                       type="text"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      placeholder="Enter or detect location"
+                      placeholder="Detecting location..."
                       className="flex-1 px-3 py-2 border rounded-md text-sm"
                     />
                     <Button size="icon" variant="outline" onClick={getUserLocation} disabled={isGettingLocation}>
-                      <Navigation className="h-4 w-4" />
+                      {isGettingLocation ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Navigation className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
+                  {userCoordinates && (
+                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      Location detected
+                    </p>
+                  )}
                 </div>
 
                 {!emergencyId && (
@@ -224,14 +242,7 @@ export default function EmergencyClient() {
               <HospitalMap
                 hospitals={filteredHospitals}
                 selectedHospitalId={selectedHospitalId}
-                userLocation={
-                  location
-                    ? {
-                        lat: Number.parseFloat(location.split(",")[0]),
-                        lng: Number.parseFloat(location.split(",")[1]),
-                      }
-                    : undefined
-                }
+                userLocation={userCoordinates}
               />
             </Card>
           </div>

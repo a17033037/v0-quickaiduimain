@@ -1,26 +1,21 @@
 import { NextResponse } from "next/server"
+import { supabaseQuery, supabaseInsert } from "@/lib/supabase/fetch-client"
 
 export async function GET() {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/emergencies?select=*&order=created_at.desc`,
-      {
-        headers: {
-          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
-        },
-        cache: "no-store",
-      },
-    )
+    console.log("[v0] Fetching emergencies from Supabase...")
 
-    const emergencies = await response.json()
+    const { data: emergencies, error } = await supabaseQuery("emergencies", {
+      order: { column: "created_at", ascending: false },
+    })
 
-    if (!response.ok) {
-      console.error("[v0] Error fetching emergencies:", emergencies)
+    if (error) {
+      console.error("[v0] Error fetching emergencies:", error)
       return NextResponse.json({ error: "Failed to fetch emergencies" }, { status: 500 })
     }
 
-    return NextResponse.json(emergencies)
+    console.log("[v0] Found emergencies:", emergencies?.length || 0)
+    return NextResponse.json(emergencies || [])
   } catch (error) {
     console.error("[v0] API Error:", error)
     return NextResponse.json({ error: "Failed to fetch emergencies" }, { status: 500 })
@@ -30,26 +25,17 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
+    console.log("[v0] Creating emergency:", body)
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/emergencies`, {
-      method: "POST",
-      headers: {
-        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
-        "Content-Type": "application/json",
-        Prefer: "return=representation",
-      },
-      body: JSON.stringify(body),
-    })
+    const { data, error } = await supabaseInsert("emergencies", body)
 
-    const data = await response.json()
-
-    if (!response.ok) {
-      console.error("[v0] Error creating emergency:", data)
+    if (error) {
+      console.error("[v0] Error creating emergency:", error)
       return NextResponse.json({ error: "Failed to create emergency" }, { status: 500 })
     }
 
-    return NextResponse.json(data[0])
+    console.log("[v0] Emergency created successfully")
+    return NextResponse.json(data)
   } catch (error) {
     console.error("[v0] API Error:", error)
     return NextResponse.json({ error: "Failed to create emergency" }, { status: 500 })

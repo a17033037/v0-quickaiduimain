@@ -34,9 +34,19 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
 
       if (!mapRef.current) return
 
-      // Clear existing map
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove()
+        try {
+          mapInstanceRef.current.off()
+          mapInstanceRef.current.remove()
+          mapInstanceRef.current = null
+        } catch (e) {
+          console.error("Error cleaning up map:", e)
+        }
+      }
+
+      if (mapRef.current) {
+        mapRef.current.innerHTML = ""
+        ;(mapRef.current as any)._leaflet_id = null
       }
 
       // Determine center point
@@ -57,7 +67,13 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
       }).addTo(map)
 
       // Clear old markers
-      markersRef.current.forEach((marker) => marker.remove())
+      markersRef.current.forEach((marker) => {
+        try {
+          marker.remove()
+        } catch (e) {
+          console.error("Error removing marker:", e)
+        }
+      })
       markersRef.current = []
 
       // Add user location marker
@@ -155,8 +171,15 @@ export default function HospitalMap({ hospitals, selectedHospitalId, userLocatio
 
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove()
+        try {
+          mapInstanceRef.current.off()
+          mapInstanceRef.current.remove()
+          mapInstanceRef.current = null
+        } catch (e) {
+          console.error("Error in cleanup:", e)
+        }
       }
+      markersRef.current = []
     }
   }, [hospitals, selectedHospitalId, userLocation])
 
