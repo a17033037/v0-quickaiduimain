@@ -1,30 +1,92 @@
-# quickaiduimain
+# QuickAid - Real-Time Emergency Hospital Bed Finder
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+QuickAid is a life-saving application that connects patients to available hospital beds in real-time during medical emergencies.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/aman-jhas-projects-8ce24b90/v0-quickaiduimain-o8)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/qAfAHO1wmRN)
+## Features
 
-## Overview
+- **Real-Time Bed Availability**: Live tracking of general, emergency, and ICU beds across hospitals
+- **Interactive Maps**: Leaflet + OpenStreetMap integration showing nearby hospitals
+- **Emergency Classification**: Specialized routing for cardiac, trauma, stroke, respiratory, and pediatric emergencies
+- **Live Dashboard**: Real-time monitoring of active emergencies and hospital capacity
+- **Geolocation Support**: Automatic detection of user location for faster response
+- **Real-time Updates**: Supabase subscriptions for instant data synchronization
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Database**: Supabase (PostgreSQL)
+- **Maps**: Leaflet + OpenStreetMap
+- **UI**: Tailwind CSS + shadcn/ui
+- **Language**: TypeScript
+- **Real-time**: Supabase Realtime
+- **Deployment**: Vercel
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ installed
+- Supabase account (already configured)
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+   \`\`\`bash
+   npm install
+   \`\`\`
+
+3. Run the database seed script:
+   - Navigate to the project in v0
+   - The SQL script will automatically populate the database with hospital data
+
+4. Start the development server:
+   \`\`\`bash
+   npm run dev
+   \`\`\`
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Database Schema
+
+### `hospitals` table
+- `id`: UUID (primary key)
+- `name`: Text (hospital name)
+- `location`: Text (lat,lng coordinates)
+- `coordinates`: JSONB (parsed coordinates)
+- `general_beds_available`: Integer
+- `emergency_beds_available`: Integer
+- `icu_beds_available`: Integer
+- `distance_km`: Numeric
+- `last_updated`: Timestamp
+
+### `emergencies` table
+- `id`: UUID (primary key)
+- `created_at`: Timestamp
+- `type`: Text (cardiac, accident, stroke, etc.)
+- `location`: Text
+- `status`: Text (searching, en_route, admitted, completed)
+- `selected_hospital_id`: UUID (foreign key)
+- `timeline`: JSONB (array of events)
+
+## Usage
+
+1. **Report Emergency**: Click "Report Emergency" and select emergency type
+2. **Get Location**: Use geolocation or enter manually
+3. **Find Hospitals**: System shows available hospitals with bed counts
+4. **View on Map**: Interactive map displays hospitals and distances
+5. **Select Hospital**: Choose hospital and confirm
+6. **Track Progress**: Monitor status on dashboard
 
 ## Deployment
 
-Your project is live at:
+This project is ready to deploy on Vercel:
 
-**[https://vercel.com/aman-jhas-projects-8ce24b90/v0-quickaiduimain-o8](https://vercel.com/aman-jhas-projects-8ce24b90/v0-quickaiduimain-o8)**
+1. Push to GitHub
+2. Import to Vercel
+3. Environment variables are automatically configured via Supabase integration
+4. Deploy!
 
-## Build your app
+## License
 
-Continue building your app on:
-
-**[https://v0.app/chat/qAfAHO1wmRN](https://v0.app/chat/qAfAHO1wmRN)**
-
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+MIT

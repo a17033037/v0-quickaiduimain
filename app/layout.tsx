@@ -1,5 +1,5 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
@@ -8,9 +8,11 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "QuickAid - Emergency Response & Hospital Bed Availability",
-  description: "Real-time emergency response system with hospital bed availability tracking",
+  title: "QuickAid - Real-Time Emergency Hospital Bed Finder",
+  description:
+    "Find available hospital beds in real-time during emergencies. Connect to the nearest hospital with cardiac, trauma, ICU, and emergency care.",
   generator: "v0.app",
+  keywords: ["emergency", "hospital", "beds", "healthcare", "ambulance", "icu", "cardiac", "trauma"],
   icons: {
     icon: [
       {
@@ -28,6 +30,16 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-icon.png",
   },
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 }
 
 export default function RootLayout({

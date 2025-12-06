@@ -1,34 +1,57 @@
-import { getEmergencies, createEmergency } from "@/lib/mock-data"
 import { NextResponse } from "next/server"
 
 export async function GET() {
-  const emergencies = getEmergencies()
-  return NextResponse.json(emergencies)
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/emergencies?select=*&order=created_at.desc`,
+      {
+        headers: {
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+        },
+        cache: "no-store",
+      },
+    )
+
+    const emergencies = await response.json()
+
+    if (!response.ok) {
+      console.error("[v0] Error fetching emergencies:", emergencies)
+      return NextResponse.json({ error: "Failed to fetch emergencies" }, { status: 500 })
+    }
+
+    return NextResponse.json(emergencies)
+  } catch (error) {
+    console.error("[v0] API Error:", error)
+    return NextResponse.json({ error: "Failed to fetch emergencies" }, { status: 500 })
+  }
 }
 
 export async function POST(request: Request) {
-  const body = await request.json()
+  try {
+    const body = await request.json()
 
-  const { type, location } = body
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/emergencies`, {
+      method: "POST",
+      headers: {
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(body),
+    })
 
-  if (!type || !["medical", "fire", "police"].includes(type)) {
-    return NextResponse.json({ error: "Invalid emergency type" }, { status: 400 })
+    const data = await response.json()
+
+    if (!response.ok) {
+      console.error("[v0] Error creating emergency:", data)
+      return NextResponse.json({ error: "Failed to create emergency" }, { status: 500 })
+    }
+
+    return NextResponse.json(data[0])
+  } catch (error) {
+    console.error("[v0] API Error:", error)
+    return NextResponse.json({ error: "Failed to create emergency" }, { status: 500 })
   }
-
-  const timeline = [
-    {
-      message: "Emergency created",
-      timestamp: new Date().toISOString(),
-    },
-  ]
-
-  const newEmergency = createEmergency({
-    type,
-    location: location || "Unknown location",
-    status: "new",
-    created_at: new Date().toISOString(),
-    timeline,
-  })
-
-  return NextResponse.json(newEmergency)
 }
