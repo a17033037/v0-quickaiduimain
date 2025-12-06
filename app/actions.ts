@@ -78,7 +78,7 @@ export async function createEmergency(data: { type: string; location: string }) 
     id: emergencyId,
     type: data.type,
     location: data.location,
-    status: "searching",
+    status: "new",
     timeline: JSON.stringify(timeline),
   })
 
